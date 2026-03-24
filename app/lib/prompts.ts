@@ -57,103 +57,117 @@ export function buildPrompt1(input: string) {
 }
 export function buildPrompt2(profile: any, option: string) {
   return `
-${SYSTEM_RULE}
+  ${SYSTEM_RULE}
 
-你是一个现实主义的人生模拟器。
+  你是一个现实主义的人生模拟器。
 
-任务：
-基于用户信息 + 当前选择，推演未来路径。
+  任务：
+  基于用户信息 + 当前选择，推演未来路径。
 
-输出结构：
-{
-  "option": "${option}",
-  "timeline": [
-    {
-      "year": "1",
-      "income_change": "具体数字区间，如15k→22k",
-      "development": "职业或人生发展",
-      "emotion": "情绪状态"
-    },
-    {
-      "year": "3",
-      "income_change": "",
-      "development": "",
-      "emotion": ""
-    },
-    {
-      "year": "5",
-      "income_change": "",
-      "development": "",
-      "emotion": ""
-    }
-  ],
-  "risks": ["风险1","风险2"],
-  "summary": "一句总结"
-}
+  输出结构：
+  {
+    "option": "${option}",
+    "timeline": [
+      {
+        "year": "1",
+        "income_change": "具体数字区间，如15k→22k",
+        "development": "职业或人生发展",
+        "emotion": "情绪状态"
+      },
+      {
+        "year": "3",
+        "income_change": "",
+        "development": "",
+        "emotion": ""
+      },
+      {
+        "year": "5",
+        "income_change": "",
+        "development": "",
+        "emotion": ""
+      }
+    ],
+    "risks": ["风险1","风险2"],
+    "summary": "一句总结"
+  }
 
-要求：
-1. 收入必须是具体区间（不能模糊）
-2. 必须符合现实（不能夸张）
-3. 必须有成长 + 阻力
-4. 至少2个风险
-5. 情绪要变化（不能全一样）
+  要求：
+  1. 收入必须是具体区间（不能模糊）
+  2. 必须符合现实（不能夸张）
+  3. 必须有成长 + 阻力
+  4. 至少2个风险
+  5. 情绪要变化（不能全一样）
 
-用户信息：
-${JSON.stringify(profile)}
-`;
+  用户信息：
+  ${JSON.stringify(profile)}
+  `;
 }
 export function buildPrompt3(path: any) {
   return `
-${SYSTEM_RULE}
+  ${SYSTEM_RULE}
 
-你是一个“现实修正器”。
+  你是一个“现实修正器”。
 
-任务：
-对已有路径进行现实增强，让结果更可信。
+  任务：
+  对已有路径进行现实增强，让结果更可信。
 
-输出：
-{
-  "extra_risks": ["额外风险1","额外风险2"],
-  "adjusted_summary": "更现实的总结"
-}
+  输出：
+  {
+    "extra_risks": ["额外风险1","额外风险2"],
+    "adjusted_summary": "更现实的总结"
+  }
 
-要求：
-1. 增加现实问题（行业、竞争、家庭）
-2. 不要推翻原结论
-3. 必须是负面但合理
-4. 不要重复已有风险
+  要求：
+  1. 增加现实问题（行业、竞争、家庭）
+  2. 不要推翻原结论
+  3. 必须是负面但合理
+  4. 不要重复已有风险
 
-原路径：
-${JSON.stringify(path)}
-`;
+  原路径：
+  ${JSON.stringify(path)}
+  `;
 }
 export function buildPrompt4(profile: any, paths: any[]) {
   return `
-    ${SYSTEM_RULE}
+  ${SYSTEM_RULE}
 
-    你是一个冷静理性的决策顾问。
+  你是一个理性的决策分析专家。
 
-    任务：
-    基于多个路径，给出明确建议。
+  任务：
+  基于用户信息 + 多条未来路径，给出最优选择。
 
-    输出：
-    {
-    "recommended_option": "推荐选项",
-    "reason": "推荐理由（必须具体）",
-    "not_recommended_reason": "不推荐原因",
-    "suitable_for_user_type": "适合人群描述"
-    }
+  ---
 
-    要求：
-    1. 必须选一个（不能模糊）
-    2. 理由必须结合用户阶段 + 风险 + 收益
-    3. 不推荐项必须指出问题
-    4. 风格：理性、冷静、像分析师
+  【用户信息】
+  ${JSON.stringify(profile)}
 
-    用户信息：
-    ${JSON.stringify(profile)}
+  ---
 
-    路径数据：
-    ${JSON.stringify(paths)}
-    `;
+  【候选路径】
+  ${JSON.stringify(paths)}
+
+  ---
+
+  请分析：
+
+  1. 每个路径的优缺点
+  2. 风险对比
+  3. 长期收益 vs 稳定性
+
+  ---
+
+  输出：
+  {
+    "recommended_option": "",
+    "reason": "",
+    "not_recommended_reason": "",
+    "suitable_for_user_type": ""
+  }
+
+  ---
+
+  规则：
+  - 必须基于 paths，不允许凭空判断
+  - 不允许泛泛而谈
+  `;
 }

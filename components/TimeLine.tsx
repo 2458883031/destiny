@@ -13,164 +13,191 @@ const stepsText = [
 ];
 
 export default function App() {
-  const [step, setStep] = useState(1);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [displayText, setDisplayText] = useState("");
-
-  // 打字机效果
-  useEffect(() => {
-    if (!loading) return;
-
-    const fullText = stepsText[currentStepIndex];
-    let i = 0;
-
-    setDisplayText("");
-
-    const typing = setInterval(() => {
-      i++;
-      setDisplayText(fullText.slice(0, i));
-      if (i >= fullText.length) {
-        clearInterval(typing);
-      }
-    }, 40);
-
-    const next = setTimeout(() => {
-      setCurrentStepIndex((prev) =>
-        prev < stepsText.length - 1 ? prev + 1 : prev
-      );
-    }, 1800);
-
-    return () => {
-      clearInterval(typing);
-      clearTimeout(next);
-    };
-  }, [currentStepIndex, loading]);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [paths, setPaths] = useState<any[]>([]);
+  const [decision, setDecision] = useState<any>(null);
 
   const handleSubmit = async () => {
-    if (!input.trim()) {
-      alert("请输入问题");
-      return;
-    }
-    setLoading(true);
-    setStep(2);
+    setLogs([]);
+    setPaths([]);
+    setDecision(null);
 
-    try {
-      const res = await fetch("/api/decision", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ input })
-      });
+    const res = await fetch("/api/decision", {
+      method: "POST",
+      body: JSON.stringify({ input })
+    });
 
-      const data = await res.json();
+    const reader = res.body?.getReader();
+    const decoder = new TextDecoder();
 
-      if (!data.success) {
-        throw new Error("失败");
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader!.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
+
+      for (const part of parts) {
+        if (!part.startsWith("data: ")) continue;
+
+        const json = part.replace("data: ", "");
+        const data = JSON.parse(json);
+
+        if (data.type === "step") {
+          setLogs((prev) => [...prev, data.message]);
+        }
+
+        if (data.type === "path") {
+          setPaths((prev) => [...prev, data.data]);
+        }
+
+        if (data.type === "decision") {
+          setDecision(data.data);
+        }
       }
-
-      setResult({
-        recommendation: data.data.decision.recommended_option,
-        paths: data.data.paths
-      });
-
-      setStep(3);
-
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      {step === 1 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h1 className="text-3xl mb-6">AI 人生决策引擎</h1>
-          <textarea
-            className="w-full p-4 rounded bg-gray-900"
-            placeholder="例如：我要不要辞职去更大的公司？"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button
-            className="mt-4 px-6 py-2 bg-blue-600 rounded"
-            onClick={handleSubmit}
-          >
-            开始推演我的未来
-          </button>
-        </motion.div>
-      )}
+    <div className="container">
+      <h1>人生决策模拟器</h1>
 
-      {step === 2 && (
-        <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mb-6"
-          />
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="输入你的问题"
+      />
 
-          <motion.div
-            key={displayText}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-lg text-gray-300"
-          >
-            {displayText}
-          </motion.div>
+      <button onClick={handleSubmit}>开始推演</button>
 
-          <div className="mt-6 flex gap-2">
-            {stepsText.map((_, i) => (
+      {/* 日志流 */}
+      <div className="logs">
+        {logs.map((log, i) => (
+          <div key={i} className="fade">
+            {log}
+          </div>
+        ))}
+      </div>
+
+      {/* 路径 */}
+      <div className="paths">
+        {paths.map((path, idx) => (
+          <div key={idx} className="card slide">
+            <h3>{path.option}</h3>
+
+            {path.timeline.map((t: any, i: number) => (
               <div
                 key={i}
-                className={`h-2 w-8 rounded ${
-                  i <= currentStepIndex ? "bg-blue-500" : "bg-gray-700"
-                }`}
-              />
+                className="timeline fade"
+                style={{ animationDelay: `${i * 0.2}s` }}
+              >
+                <p>{t.year}年</p>
+                <p>
+                  {t.value_label}：{t.value}
+                </p>
+                {t.change_rate && <p>收益率：{t.change_rate}</p>}
+                <p>{t.event}</p>
+                <p>{t.emotion}</p>
+              </div>
             ))}
+
+            <div className="risks">
+              {path.risks.map((r: string, i: number) => (
+                <div key={i} className="fade">
+                  ⚠️ {r}
+                </div>
+              ))}
+            </div>
           </div>
+        ))}
+      </div>
+
+      {/* 决策 */}
+      {decision && (
+        <div className="decision pop">
+          <h2>推荐：{decision.recommended_option}</h2>
+          <p>{decision.reason}</p>
         </div>
       )}
 
-      {step === 3 && result && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h2 className="text-2xl mb-4">你未来5年的可能路径</h2>
+      <style jsx>{`
+        .container {
+          max-width: 800px;
+          margin: auto;
+          padding: 20px;
+        }
 
-          <div className="mb-6 p-4 bg-green-700 rounded text-lg">
-            👉 推荐选择：{result.recommendation}
-          </div>
+        input {
+          width: 100%;
+          padding: 10px;
+          margin: 10px 0;
+        }
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {result.paths.map((path, idx) => (
-              <div
-                key={idx}
-                className={`p-4 rounded ${
-                  path.option === result.recommendation
-                    ? "bg-gray-800 border border-green-500"
-                    : "bg-gray-900 opacity-70"
-                }`}
-              >
-                <h3 className="text-xl mb-2">{path.option}</h3>
-                {path.timeline.map((t, i) => (
-                  <div key={i} className="mb-2 border-b border-gray-700 pb-2">
-                    <p>{t.year}年</p>
-                    <p>{t.value_label}：{t.value}</p>
-                    {t.change_rate && (
-                      <p>收益率：{t.change_rate}</p>
-                    )}
-                    <p>{t.event}</p>
-                    <p>{t.emotion}</p>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+        button {
+          padding: 10px 20px;
+        }
+
+        .card {
+          border: 1px solid #ddd;
+          padding: 10px;
+          margin-top: 20px;
+          border-radius: 10px;
+        }
+
+        .fade {
+          animation: fadeIn 0.5s ease;
+        }
+
+        .slide {
+          animation: slideIn 0.6s ease;
+        }
+
+        .pop {
+          animation: popIn 0.4s ease;
+          margin-top: 20px;
+          padding: 15px;
+          background: #f5f5f5;
+          border-radius: 10px;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(5px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes popIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
