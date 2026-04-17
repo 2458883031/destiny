@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { log } from "console";
 
 const stepsText = [
   "正在解析你的问题…",
@@ -17,6 +16,8 @@ export default function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [paths, setPaths] = useState<any[]>([]);
   const [decision, setDecision] = useState<any>(null);
+  const [mode, setMode] = useState("");
+  const [answer, setAnswer] = useState("");
 
   const handleSubmit = async () => {
     setLogs([]);
@@ -58,6 +59,10 @@ export default function App() {
 
         if (data.type === "decision") {
           setDecision(data.data);
+        }
+        if (data.type === "answer") {
+          setMode(data.mode);
+          setAnswer(data.data);
         }
       }
     }
@@ -122,6 +127,19 @@ export default function App() {
         <div className="decision pop">
           <h2>推荐：{decision.recommended_option}</h2>
           <p>{decision.reason}</p>
+        </div>
+      )}
+      {mode === "analysis" && (
+        <div className="analysis fade">
+          <h2>原因分析</h2>
+          <pre>{answer}</pre>
+        </div>
+      )}
+
+      {mode === "plan" && (
+        <div className="plan fade">
+          <h2>行动方案</h2>
+          <pre>{answer}</pre>
         </div>
       )}
 

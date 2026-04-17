@@ -10,50 +10,47 @@ export const SYSTEM_RULE = `
 
 export function buildPrompt1(input: string) {
   return `
-    ${SYSTEM_RULE}
+  ${SYSTEM_RULE}
+  你是一个问题分类与结构化专家。
 
-    你是一个决策分析器。
+  任务：
+  1. 判断问题类型
+  2. 如果是决策问题，提取决策结构
 
-    任务：
-    1. 提取用户决策问题
-    2. 判断决策类型
+  ---
 
-    【决策类型说明】：
-    - career：工作、跳槽、升职、转行
-    - investment：股票、基金、买房、理财
-    - relationship：恋爱、婚姻、人际关系
-    - location：城市选择、是否离开某地
-    - other：无法归类
+  【问题类型】
 
-    ---
+  - decision：是否、要不要、该不该
+  - analysis：为什么、原因、趋势
+  - plan：如何做、步骤、建议
 
-    输出格式：
-    {
+  ---
+
+  输出：
+
+  {
+    "question_type": "decision | analysis | plan",
     "decision_topic": "",
     "decision_type": "career | investment | relationship | location | other",
-    "options": [],
-    "user_profile": {
-        "age": 28,
-        "career_stage": "mid",
-        "income_level": "medium",
-        "risk_preference": "medium",
-        "location": "未知",
-        "extra_info": ""
-    }
-    }
+    "options": []
+  }
 
-    ---
+  ---
 
-    规则：
-    1. 必须选择一个 decision_type
-    2. options 必须是对立选择
-    3. 不允许空字段
+  规则：
 
-    ---
+  1. 必须判断 question_type
+  2. 如果不是 decision：
+    - decision_topic = ""
+    - options = []
+  3. decision 类型必须提供 options（2~3个）
 
-    用户输入：
-    ${input}
-    `;
+  ---
+
+  用户输入：
+  ${input}
+  `;
 }
 export function buildPrompt2(profile: any, option: string) {
   return `
@@ -169,5 +166,31 @@ export function buildPrompt4(profile: any, paths: any[]) {
   规则：
   - 必须基于 paths，不允许凭空判断
   - 不允许泛泛而谈
+  `;
+}
+
+export function buildAnalysisPrompt(input: string) {
+  return `
+    请分析以下问题的原因：
+
+    ${input}
+
+    要求：
+    1. 分点说明（3~5点）
+    2. 逻辑清晰
+    3. 简洁
+    `;
+}
+
+export function buildPlanPrompt(input: string) {
+  return `
+  请给出解决方案：
+
+  ${input}
+
+  要求：
+  1. 分步骤（Step1, Step2...）
+  2. 可执行
+  3. 避免空话
   `;
 }
